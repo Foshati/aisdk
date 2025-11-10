@@ -1,24 +1,21 @@
-import { streamText, UIMessage, convertToModelMessages } from "ai";
+import { streamText } from "ai";
+import { deepseek } from "@ai-sdk/deepseek";
 
-// Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const {
-    messages,
-    model,
-    webSearch,
-  }: { messages: UIMessage[]; model: string; webSearch: boolean } =
-    await req.json();
+  const { messages, model, webSearch } = await req.json();
+
+  const systemPrompt = webSearch
+    ? "You are a helpful assistant that can answer questions, analyze images, and help with tasks. When web search is enabled, provide comprehensive and up-to-date information."
+    : "You are a helpful assistant that can answer questions, analyze images, and help with tasks.";
 
   const result = streamText({
-    model: webSearch ? "perplexity/sonar" : model,
-    messages: convertToModelMessages(messages),
-    system:
-      "You are a helpful assistant that can answer questions and help with tasks",
+    model: deepseek(model || "deepseek-chat"),
+    messages: messages || [],
+    system: systemPrompt,
   });
 
-  // send sources and reasoning back to the client
   return result.toUIMessageStreamResponse({
     sendSources: true,
     sendReasoning: true,
